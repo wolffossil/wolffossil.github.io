@@ -22,7 +22,7 @@
 
 ### 1. 生成博客专用 key(新文件,不碰工作 key)
 ```bash
-ssh-keygen -t ed25519 -C "你的个人邮箱" -f ~/.ssh/id_ed25519_wolffossil
+ssh-keygen -t ed25519 -C "a1048077729@outlook.com" -f ~/.ssh/id_ed25519_wolffossil
 # 一路回车即可
 ```
 
@@ -41,7 +41,7 @@ git config core.sshCommand "ssh -i ~/.ssh/id_ed25519_wolffossil -o IdentitiesOnl
 
 # 仓库级身份 —— 不动全局工作身份
 git config user.name  "wolffossil"
-git config user.email "你的个人邮箱"    # 或隐私邮箱 <数字ID>+wolffossil@users.noreply.github.com
+git config user.email "a1048077729@outlook.com"    # 或隐私邮箱 <数字ID>+wolffossil@users.noreply.github.com
 
 # remote 用普通 github.com 即可(认证由 core.sshCommand 接管)
 git remote add origin git@github.com:wolffossil/wolffossil.github.io.git
@@ -80,7 +80,7 @@ Host github-wolffossil
 ```bash
 git remote set-url origin git@github-wolffossil:wolffossil/wolffossil.github.io.git
 git config user.name  "wolffossil"
-git config user.email "你的个人邮箱"
+git config user.email "a1048077729@outlook.com"
 ssh -T git@github-wolffossil     # 验证:Hi wolffossil!
 ```
 
