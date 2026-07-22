@@ -1,0 +1,37 @@
+/* 站点自定义样式 —— 从旧主题 fork 迁移过来，放这里就不用再改主题源码
+   （Hugo 会用本文件覆盖主题里的 assets/scss/custom.scss 占位） */
+
+/* 字体：霞鹜文楷 + Cascadia Code（等宽代码字体） */
+@import url('https://cdn.jsdelivr.net/npm/lxgw-wenkai-lite-webfont@1.1.0/style.css');
+@import url('https://cdn.jsdelivr.net/npm/@fontsource/cascadia-code@4.2.1/index.min.css');
+
+:root {
+    /* 代码块字体加入 Cascadia Code */
+    --code-font-family: Menlo, Monaco, Consolas, "Cascadia Code", var(--zh-font-family), monospace;
+}
+
+/* 链接 hover 圆角 */
+a:hover {
+    border-radius: var(--tag-border-radius);
+}
+
+/* 细滚动条（8px） */
+* {
+    scrollbar-width: thin;
+}
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+/* 文章标题/副标题字号微调 */
+.article-title {
+    @include respond(xl) {
+        font-size: 2.8rem;
+    }
+}
+.article-subtitle {
+    @include respond(xl) {
+        font-size: 1.5rem;
+    }
+}

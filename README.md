@@ -21,5 +21,9 @@ git add . && git commit -m "post: my-post" && git push
 ## 说明
 
 - 文章放在 `content/post/` 下。
-- 主题以 git submodule 引入（`themes/hugo-theme-stack`）。克隆需带 `--recurse-submodules`。
-- 构建部署逻辑见 `.github/workflows/deploy.yml`，Hugo 版本锁定在 `0.121.2`。
+- 主题以 git submodule 引入，**直接跟随官方** [`CaiJimmy/hugo-theme-stack`](https://github.com/CaiJimmy/hugo-theme-stack)（当前 `v4.0.3`），不再维护个人 fork。克隆需带 `--recurse-submodules`。
+- 更新主题：`git submodule update --remote themes/hugo-theme-stack` 后 commit。
+- 自定义样式统一放在 `assets/scss/custom.scss`（覆盖主题占位），改主题外观不用动 submodule。
+- 构建部署逻辑见 `.github/workflows/deploy.yml`，Hugo 锁定 `0.164.0`。
+
+> 注：代码块「复制」按钮为主题内置英文 `Copy`（旧 fork 曾汉化，为不再维护 fork 已放弃这处汉化）。

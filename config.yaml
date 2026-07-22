@@ -1,13 +1,14 @@
 baseurl: https://wolffossil.github.io/ #填写域名
-languageCode: zh-cn
+locale: zh-cn
 theme: hugo-theme-stack
-paginate: 5   #一页显示几篇博文
+pagination:
+    pagerSize: 5   #一页显示几篇博文
 title: ZHY の blog
 copyright: ZHY
 
 languages:
     zh-cn:
-        languageName: 中文
+        label: 中文
         title: ZHY の blog
         weight: 1
         params:
@@ -38,7 +39,7 @@ params:
         - post
     featuredImageField: image
     rssFullContent: true
-    favicon: /favicon.ico  # e.g.: favicon placed in `static/favicon.ico` of your site folder, then set this field to `/favicon.ico` (`/` is necessary)
+    favicon: img/favicon.png  # v4: 走资产管线，指向 assets/img/favicon.png
 
     footer:
         since: 2023
@@ -51,10 +52,7 @@ params:
     sidebar:
         emoji: 🍥
         subtitle: long may the sun shine!🌞
-        avatar:
-            enabled: true
-            local: true
-            src: img/kabi.png
+        avatar: img/kabi.png   # v4: 直接字符串,指向 assets/img/kabi.png
 
     article:
         math: false
@@ -182,6 +180,10 @@ params:
             enabled: true
         content:
             enabled: true
+
+    # v4 新增: GDPR Cookie 同意条(默认关闭,不影响使用)
+    cookies:
+        enabled: false
 
 ### Custom menu
 ### See https://docs.stack.jimmycai.com/configuration/custom-menu.html

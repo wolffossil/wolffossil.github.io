@@ -24,11 +24,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      # Hugo 版本：锁定为已验证可正常构建当前主题的版本。
-      # 注意：主题 fork 误把一张 favicon.png 放进了 layouts/partials/ 下，
-      # Hugo >= 0.158 会把它当模板解析而报错，故暂锁 0.121.2。
-      # 后续清掉那张图或升级主题后，可再往上升级本版本号。
-      HUGO_VERSION: 0.121.2
+      # Hugo 版本：已随最新主题 hugo-theme-stack v4.0.3 验证通过。升级改这里即可。
+      HUGO_VERSION: 0.164.0
     steps:
       - name: Install Hugo CLI (extended)
         run: |
