@@ -1,131 +1,133 @@
-# 发布指南 · 多 Git 账号下推送到 GitHub
+# 发布指南 · 多 Git 账号下推送到 GitHub(零影响工作账号)
 
-> 适用场景:本机已有**工作 Git 账号**(全局身份 `禹水 / yushui.zhy@alibaba-inc.com`,SSH key `~/.ssh/id_ed25519` 绑定工作/内网,且**未授权 github.com**)。
-> 个人博客账号是 **`wolffossil`**,目标仓库 `wolffossil/wolffossil.github.io`。
-> 核心思路:给个人账号配**独立 SSH key + SSH Host 别名 + 仓库级身份**,与工作配置完全隔离,互不干扰。
-
----
-
-## 一、为什么不能直接 push
-
-- 全局 `user.name/email` 是工作账号 → 直接提交会把**工作邮箱**写进个人博客的 commit 记录。
-- 唯一的 `id_ed25519` 绑定工作账号,**在 github.com 上没有权限**(实测 `Permission denied (publickey)`)。
-
-因此需要为个人账号单独准备一套认证 + 身份。下面是**一次性配置**,配完以后日常只需 `git push`。
+> 本机现状:全局身份是**工作账号** `禹水 / yushui.zhy@alibaba-inc.com`,SSH key `~/.ssh/id_ed25519` 绑定工作/内网(且**未授权 github.com**),无 `~/.ssh/config`。
+> 个人博客账号 **`wolffossil`**,目标仓库 `wolffossil/wolffossil.github.io`。
+> 目标:配好个人账号推送,同时**完全不影响工作账号**。
 
 ---
 
-## 二、一次性配置(只做一次)
+## 零、三条铁律(不误伤工作账号的关键)
 
-### 1. 为个人账号生成独立 SSH key
+1. **永远不加 `--global`** —— 博客身份只用**仓库级** `git config`,写进博客 `.git/config`,与全局工作身份物理隔离。
+2. **生成 key 必带 `-f` 指定新文件名** —— 绝不覆盖工作的 `~/.ssh/id_ed25519`。
+3. **用仓库级 `core.sshCommand` 指定专用 key** —— 连 `~/.ssh/config` 都不改,工作 SSH 走向完全不受影响。
 
+> 记住:博客的每一项设置,要么是**新建文件**,要么是**只对博客仓库生效的本地配置**。
+
+---
+
+## 一、方法 A(推荐):零全局足迹
+
+`core.sshCommand` 写在博客仓库自己的 `.git/config` 里,只在这个仓库生效;`~/.ssh/config`(所有 SSH 共享)完全不动。
+
+### 1. 生成博客专用 key(新文件,不碰工作 key)
 ```bash
-ssh-keygen -t ed25519 -C "你的GitHub个人邮箱" -f ~/.ssh/id_ed25519_wolffossil
-# 一路回车即可(passphrase 可留空)
+ssh-keygen -t ed25519 -C "你的个人邮箱" -f ~/.ssh/id_ed25519_wolffossil
+# 一路回车即可
 ```
-> 用 `-f` 指定独立文件名,**不要覆盖**工作用的 `id_ed25519`。
 
-### 2. 把公钥加到 GitHub 个人账号
-
+### 2. 公钥加到 GitHub 个人账号
 ```bash
-pbcopy < ~/.ssh/id_ed25519_wolffossil.pub   # 复制公钥到剪贴板
+pbcopy < ~/.ssh/id_ed25519_wolffossil.pub
 ```
-浏览器登录 **wolffossil** 账号 → Settings → SSH and GPG keys → New SSH key → 粘贴 → 保存。
+浏览器登录 **wolffossil** → Settings → SSH and GPG keys → New SSH key → 粘贴保存。
 
-### 3. 配置 SSH Host 别名(关键)
+### 3. 只在博客仓库做本地配置(全部不带 --global)
+```bash
+cd /Users/zhy/Desktop/projects/wolffossil-blog
 
-编辑(没有就新建)`~/.ssh/config`,**追加**以下内容(不会影响工作 key):
+# 让本仓库专用博客 key —— 不改 ~/.ssh/config,工作 SSH 零影响
+git config core.sshCommand "ssh -i ~/.ssh/id_ed25519_wolffossil -o IdentitiesOnly=yes"
 
+# 仓库级身份 —— 不动全局工作身份
+git config user.name  "wolffossil"
+git config user.email "你的个人邮箱"    # 或隐私邮箱 <数字ID>+wolffossil@users.noreply.github.com
+
+# remote 用普通 github.com 即可(认证由 core.sshCommand 接管)
+git remote add origin git@github.com:wolffossil/wolffossil.github.io.git
+# 已存在则:git remote set-url origin git@github.com:wolffossil/wolffossil.github.io.git
+```
+
+### 4. 验证走的是博客 key
+```bash
+GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519_wolffossil -o IdentitiesOnly=yes" ssh -T git@github.com
+# 期望:Hi wolffossil! You've successfully authenticated...
+```
+
+### 5. 推送
+```bash
+git branch -M main
+git push -f origin main
+```
+> 线上仅是旧的静态产物(可重新生成、`blog-file` 亦为备份),`-f` 覆盖最干净。想保留旧历史则改用 `git pull origin main --allow-unrelated-histories` 后再 push。
+
+---
+
+## 二、方法 B(备选):SSH Host 别名
+
+如果你更习惯 ssh 别名、或同一账号要在多个仓库复用,可改用 `~/.ssh/config` 别名。**注意:这会创建一个所有 SSH 共享的配置文件**,但只要遵守"只追加、不写 `Host *`、不碰 `github.com` 默认项",工作账号依然不受影响。
+
+`~/.ssh/config` **追加**(文件不存在则新建):
 ```sshconfig
-# 个人博客账号 wolffossil 专用
+# 个人博客账号 wolffossil 专用(独立别名,不影响其他 host)
 Host github-wolffossil
     HostName github.com
     User git
     IdentityFile ~/.ssh/id_ed25519_wolffossil
     IdentitiesOnly yes
 ```
-- `Host github-wolffossil` 是**自定义别名**,后面 remote 要用它。
-- `IdentitiesOnly yes` 强制只用这把 key,避免 SSH 误用工作 key。
-- github.com 的默认行为保持不变,工作流程不受影响。
-
-### 4. 验证连通
-
+然后 remote 用别名:
 ```bash
-ssh -T git@github-wolffossil
-# 期望输出:Hi wolffossil! You've successfully authenticated...
-```
-
----
-
-## 三、给博客仓库绑定个人身份 + 远程
-
-在博客仓库目录里执行(**仓库级配置,不影响全局工作身份**):
-
-```bash
-cd /Users/zhy/Desktop/projects/wolffossil-blog
-
-# 仓库级身份(只对本仓库生效)
+git remote set-url origin git@github-wolffossil:wolffossil/wolffossil.github.io.git
 git config user.name  "wolffossil"
-git config user.email "你的GitHub个人邮箱"   # 或用 GitHub 隐私邮箱 <数字ID>+wolffossil@users.noreply.github.com
-
-# 远程用 SSH 别名(注意冒号后是 用户名/仓库名)
-git remote add origin git@github-wolffossil:wolffossil/wolffossil.github.io.git
-# 若已存在 origin:git remote set-url origin git@github-wolffossil:wolffossil/wolffossil.github.io.git
+git config user.email "你的个人邮箱"
+ssh -T git@github-wolffossil     # 验证:Hi wolffossil!
 ```
 
-**核对身份没写错**(避免把工作邮箱推上去):
-```bash
-git config user.email                 # 应显示个人邮箱
-git log --format='%an <%ae>' -3       # 看已有提交的作者
-```
+> 两种方法二选一即可。**只想影响面最小 → 用方法 A。**
 
 ---
 
-## 四、推送
+## 三、开启 GitHub Actions 自动部署(只做一次)
 
-线上 `wolffossil.github.io` 目前只是旧的静态产物(可随时重新生成,且 `blog-file` 仓库还在做备份),直接用干净的新历史覆盖最清爽:
-
-```bash
-git branch -M main
-git push -f origin main
-```
-
-> 如果你想保留线上旧历史而非覆盖,改用 `git pull origin main --allow-unrelated-histories` 合并后再 `git push`,但没必要——旧内容都是生成物。
-
----
-
-## 五、开启 GitHub Actions 自动部署(只做一次)
-
-浏览器打开:`https://github.com/wolffossil/wolffossil.github.io/settings/pages`
+浏览器打开 `https://github.com/wolffossil/wolffossil.github.io/settings/pages`
 → **Build and deployment → Source** 改为 **"GitHub Actions"**。
-
-之后每次 `git push`,`.github/workflows/deploy.yml` 会自动用 Hugo 构建并部署,几分钟后 `https://wolffossil.github.io` 更新。构建进度在仓库 **Actions** 标签页查看。
+之后每次 `git push` 自动构建部署;进度在仓库 **Actions** 标签页看。
 
 ---
 
-## 六、日常发布(配置完成后)
+## 四、事后自查:证明工作账号毫发无损
+
+```bash
+git config --global user.email        # 仍是 yushui.zhy@alibaba-inc.com ✓
+git config --global user.name         # 仍是 禹水 ✓
+ls -la ~/.ssh/id_ed25519              # 工作 key 还在、时间戳未变 ✓
+git -C /Users/zhy/Desktop/projects/wolffossil-blog config user.email   # 博客=个人邮箱 ✓
+git -C /Users/zhy/Desktop/projects/wolffossil-blog config core.sshCommand  # 指向博客 key ✓
+```
+再正常做一次工作 git 操作(内网 push/pull)确认无异常即可。
+
+---
+
+## 五、日常发布(配置完成后)
 
 ```bash
 cd /Users/zhy/Desktop/projects/wolffossil-blog
 # ...写文章...
 git add .
 git commit -m "post: 新文章标题"
-git push        # 触发自动部署,无需再手动 hugo 构建
+git push        # 触发自动部署,无需手动 hugo 构建
 ```
 
 ---
 
-## 附:HTTPS + PAT 备选方案(不想用 SSH 时)
+## 附:HTTPS + PAT 备选(不想用 SSH 时)
 
-1. GitHub(wolffossil)→ Settings → Developer settings → Personal access tokens → 生成 token(勾选 `repo`)。
-2. remote 用 HTTPS:
-   ```bash
-   git remote set-url origin https://github.com/wolffossil/wolffossil.github.io.git
-   ```
-3. push 时用户名填 `wolffossil`,密码**粘贴 token**(不是账号密码)。
-4. 想免输:`git config credential.helper osxkeychain`(macOS 钥匙串);多账号下注意钥匙串里区分不同 host 的凭据。
-
-> SSH 别名方案对多账号更省心,推荐优先用它。
+⚠️ 多账号下走 HTTPS 要小心 macOS 钥匙串把凭据和工作账号搞混,**优先用方法 A 的 SSH**。若确需:
+1. wolffossil → Settings → Developer settings → Personal access tokens → 生成(勾 `repo`)。
+2. `git remote set-url origin https://github.com/wolffossil/wolffossil.github.io.git`
+3. push 时用户名 `wolffossil`、密码粘贴 **token**。
+4. **不要**全局开 `credential.helper`;要用就在本仓库级设,避免与工作凭据混淆。
 
 ---
 
@@ -133,7 +135,8 @@ git push        # 触发自动部署,无需再手动 hugo 构建
 
 | 现象 | 原因 / 解决 |
 |------|------|
-| `Permission denied (publickey)` | 公钥没加到 wolffossil 账号,或 remote 没用 `github-wolffossil` 别名 |
-| commit 作者显示成工作邮箱 | 忘了在仓库里 `git config user.email`;用 `git commit --amend --reset-author` 修最近一次 |
-| push 报 submodule 相关错 | 正常,主题是子模块;确保 `.gitmodules` 指向官方(已配好),CI 会自动拉取 |
-| 别人 clone 缺主题 | 让对方 `git clone --recurse-submodules`,详见另一份《新机器更新博客》文档 |
+| `Permission denied (publickey)` | 公钥没加到 wolffossil;或 `core.sshCommand`/remote 没配对 |
+| commit 作者是工作邮箱 | 忘了在仓库里 `git config user.email`;`git commit --amend --reset-author` 修最近一次 |
+| 担心影响工作 key | 方法 A 全程不碰 `~/.ssh/id_ed25519` 和 `~/.ssh/config`,按第四节自查即可 |
+| 别人 clone 缺主题 | `git clone --recurse-submodules`,见《新机器更新博客》 |
+| 换机器后 push 又要认证 | `core.sshCommand` 是仓库级、不随 push 上传,新克隆需重设一次(见另一份文档) |
